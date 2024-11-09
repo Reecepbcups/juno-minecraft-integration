@@ -6,7 +6,7 @@
 
   <groupId>com.crafteconomy</groupId>
   <artifactId>craft-integration</artifactId>
-  <version>4.4.8</version>
+  <version>4.5.0</version>
   <name>craft-integration</name>
 
   <properties>
@@ -37,7 +37,7 @@
 
     <!-- PaperMC -->
     <!-- Used for Bukkit.getOfflinePlayerIfCached -->
-    <dependency> 
+    <dependency>
       <groupId>io.papermc.paper</groupId>
       <artifactId>paper-api</artifactId>
       <version>1.17.1-R0.1-SNAPSHOT</version>
@@ -102,7 +102,7 @@
             <version>2.3.1</version>
             <configuration>
                 <finalName>craft-integration-${project.version}</finalName>
-                <outputDirectory>${basedir}/../output</outputDirectory>
+                <outputDirectory>${basedir}/outputs</outputDirectory>
             </configuration>
         </plugin>
         <plugin>
@@ -121,7 +121,7 @@
                 </annotationProcessorPaths>
             </configuration>
         </plugin>
-        <plugin> 
+        <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-shade-plugin</artifactId>
             <version>3.2.4</version>

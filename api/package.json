@@ -7,7 +7,7 @@
     "dev": "ts-node src/index.ts",
     "watch": "nodemon src/index.ts",
     "build": "tsc --build",
-    "production": "node dist/index.js"    
+    "production": "node dist/index.js"
   },
   "repository": {
     "type": "git",
@@ -17,7 +17,7 @@
   "license": "ISC",
   "dependencies": {
     "@coingecko/cg-api-ts": "^0.0.51",
-    "@cosmjs/stargate": "^0.31.0",
+    "@cosmjs/stargate": "^0.32.4",
     "axios": "^0.27.2",
     "cors": "^2.8.5",
     "cosmwasm": "^1.1.1",

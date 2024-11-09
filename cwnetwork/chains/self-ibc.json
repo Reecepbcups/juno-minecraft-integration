@@ -1,0 +1,168 @@
+{
+    "chains": [
+        {
+            "name": "cwnetwork",
+            "chain_id": "localchain-1",
+            "docker_image": {
+                "repository": "cwnetwork",
+                "version": "local",
+                "uid-gid": ""
+            },
+            "gas_prices": "0.0token",
+            "gas_adjustment": 2,
+            "genesis": {
+                "modify": [
+                    {
+                        "key": "app_state.gov.params.voting_period",
+                        "value": "10s"
+                    },
+                    {
+                        "key": "app_state.gov.params.max_deposit_period",
+                        "value": "10s"
+                    },
+                    {
+                        "key": "app_state.gov.params.min_deposit.0.denom",
+                        "value": "token"
+                    },
+                    {
+                        "key": "app_state.gov.params.min_deposit.0.amount",
+                        "value": "1"
+                    }
+                ],
+                "accounts": [
+                    {
+                        "name": "acc0",
+                        "amount": "25000000000%DENOM%",
+                        "address": "cosmos1hj5fveer5cjtn4wd6wstzugjfdxzl0xpxvjjvr",
+                        "mnemonic": "decorate bright ozone fork gallery riot bus exhaust worth way bone indoor calm squirrel merry zero scheme cotton until shop any excess stage laundry"
+                    },
+                    {
+                        "name": "acc1",
+                        "amount": "24000000000%DENOM%",
+                        "address": "cosmos1efd63aw40lxf3n4mhf7dzhjkr453axur6cpk92",
+                        "mnemonic": "wealth flavor believe regret funny network recall kiss grape useless pepper cram hint member few certain unveil rather brick bargain curious require crowd raise"
+                    },
+                    {
+                        "name": "user0",
+                        "amount": "100000%DENOM%",
+                        "address": "cosmos1tvltz67szrmvqmvtwt0ry73hcftzgdeyvrdgv8",
+                        "mnemonic": "island rotate kitchen couch surface black idea ocean use frequent bounce treat obvious usual occur nation sentence own place dragon library sure asthma pioneer"
+                    },
+                    {
+                        "name": "user1",
+                        "amount": "100000%DENOM%",
+                        "address": "cosmos1eww36vuqer2s3y6ef7fxh8eteaztusc0ta3qz8",
+                        "mnemonic": "race orphan gown unusual bullet path situate surge practice success joke either guitar mirror era junk farm check dish joy country uphold spray lawn"
+                    }
+                ]
+            },
+            "config_file_overrides": [
+                {
+                    "file": "config/app.toml",
+                    "paths": {
+                        "api.enabled-unsafe-cors": true
+                    }
+                },
+                {
+                    "file": "config/config.toml",
+                    "paths": {
+                        "rpc.cors_allowed_origins": [
+                            "*"
+                        ]
+                    }
+                }
+            ],
+            "ibc_paths": [
+                "localchain-1_localchain-2"
+            ],
+            "number_vals": 1,
+            "number_node": 0,
+            "chain_type": "cosmos",
+            "coin_type": 118,
+            "binary": "simd",
+            "bech32_prefix": "cosmos",
+            "denom": "token",
+            "trusting_period": "336h",
+            "debugging": false,
+            "block_time": "2000ms",
+            "host_port_override": {
+                "1317": "1317",
+                "26656": "26656",
+                "26657": "26657",
+                "9090": "9090"
+            },
+            "ics_version_override": {}
+        },
+        {
+            "name": "cwnetwork",
+            "chain_id": "localchain-2",
+            "docker_image": {
+                "repository": "cwnetwork",
+                "version": "local",
+                "uid-gid": ""
+            },
+            "gas_prices": "0.0token",
+            "gas_adjustment": 2,
+            "genesis": {
+                "modify": [
+                    {
+                        "key": "app_state.gov.params.voting_period",
+                        "value": "3s"
+                    },
+                    {
+                        "key": "app_state.gov.params.max_deposit_period",
+                        "value": "10s"
+                    },
+                    {
+                        "key": "app_state.gov.params.min_deposit.0.denom",
+                        "value": "token"
+                    },
+                    {
+                        "key": "app_state.gov.params.min_deposit.0.amount",
+                        "value": "1"
+                    }
+                ],
+                "accounts": [
+                    {
+                        "name": "acc0",
+                        "amount": "25000000000%DENOM%",
+                        "address": "cosmos1hj5fveer5cjtn4wd6wstzugjfdxzl0xpxvjjvr",
+                        "mnemonic": "decorate bright ozone fork gallery riot bus exhaust worth way bone indoor calm squirrel merry zero scheme cotton until shop any excess stage laundry"
+                    },
+                    {
+                        "name": "acc1",
+                        "amount": "24000000000%DENOM%",
+                        "address": "cosmos1efd63aw40lxf3n4mhf7dzhjkr453axur6cpk92",
+                        "mnemonic": "wealth flavor believe regret funny network recall kiss grape useless pepper cram hint member few certain unveil rather brick bargain curious require crowd raise"
+                    },
+                    {
+                        "name": "user0",
+                        "amount": "100000%DENOM%",
+                        "address": "cosmos1jfdusrfz9r2ssn6pmpgwx0le4ug6w2xdytevc9",
+                        "mnemonic": "shoulder bargain ugly stamp emotion moment choice person object address rapid resemble comfort pledge ensure face two brown now venture intact differ kid off"
+                    },
+                    {
+                        "name": "user1",
+                        "amount": "100000%DENOM%",
+                        "address": "cosmos15nefc3xjfakkwgsyhjhpkm4pdrk300d3l9t9hv",
+                        "mnemonic": "fantasy guess damage enrich decrease agent occur mistake submit december tribe task pole note protect shallow produce convince gym want swap mango virtual divert"
+                    }
+                ]
+            },
+            "ibc_paths": [
+                "localchain-1_localchain-2"
+            ],
+            "number_vals": 1,
+            "number_node": 0,
+            "chain_type": "cosmos",
+            "coin_type": 118,
+            "binary": "simd",
+            "bech32_prefix": "cosmos",
+            "denom": "token",
+            "trusting_period": "336h",
+            "debugging": false,
+            "block_time": "2000ms",
+            "ics_version_override": {}
+        }
+    ]
+}

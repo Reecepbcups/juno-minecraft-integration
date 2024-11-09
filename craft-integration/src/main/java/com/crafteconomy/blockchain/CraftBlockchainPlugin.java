@@ -8,6 +8,7 @@ import com.crafteconomy.blockchain.commands.escrow.subcommands.EscrowHelp;
 import com.crafteconomy.blockchain.commands.escrow.subcommands.EscrowPay;
 import com.crafteconomy.blockchain.commands.escrow.subcommands.EscrowRedeem;
 import com.crafteconomy.blockchain.commands.wallet.WalletCMD;
+import com.crafteconomy.blockchain.commands.wallet.subcommands.IBCTransfer;
 import com.crafteconomy.blockchain.commands.wallet.subcommands.WalletBalance;
 import com.crafteconomy.blockchain.commands.wallet.subcommands.WalletClearPending;
 import com.crafteconomy.blockchain.commands.wallet.subcommands.WalletFaucet;
@@ -57,12 +58,13 @@ public class CraftBlockchainPlugin extends JavaPlugin {
     private String DAO_SERVER_WALLET = null;
     private String REST_API_WALLET_ADDRESS = null;
 
-    private static String WALLET_PREFIX = "juno";    
-    private static String TOKEN_DENOM = "ujunox";    
-    private static String TOKEN_DENOM_NAME = "Juno";   
+    private static String WALLET_PREFIX = "cosmos";
+    private static String TOKEN_DENOM = "token";
+    private static String TOKEN_DENOM_NAME = "Token";
 
     private String INTERNAL_API = null;
     private String API_MAKE_PAYMENT_ENDPOINT = INTERNAL_API + "/v1/dao/make_payment";
+    private String API_IBC_TRANSFER_ITEM = INTERNAL_API + "/v1/dao/ibc_transfer";
 
     private BukkitTask redisPubSubTask = null;
     private Jedis jedisPubSubClient = null;
@@ -73,7 +75,7 @@ public class CraftBlockchainPlugin extends JavaPlugin {
 
     public static boolean ENABLED_FAUCET = false;
 
-    private static Integer REDIS_MINUTE_TTL = 30;   
+    private static Integer REDIS_MINUTE_TTL = 30;
     private static Boolean DEV_MODE = false;
     private static Boolean DEBUGGING_MSGS = false;
 
@@ -85,7 +87,7 @@ public class CraftBlockchainPlugin extends JavaPlugin {
 
         // get SERVER_NAME
         String[] folder_location = Bukkit.getWorldContainer().getAbsolutePath().split("/");
-        SERVER_NAME = folder_location[folder_location.length - 2]; // gets the world folder, then back a directory = server name (ex: economy-1)              
+        SERVER_NAME = folder_location[folder_location.length - 2]; // gets the world folder, then back a directory = server name (ex: economy-1)
 
         getConfig().options().copyDefaults(true);
         saveConfig();
@@ -103,7 +105,7 @@ public class CraftBlockchainPlugin extends JavaPlugin {
             INTERNAL_API = INTERNAL_API.substring(0, INTERNAL_API.length() - 1);
         }
         // ensure it has http at the start
-        if(!INTERNAL_API.startsWith("http")) {            
+        if(!INTERNAL_API.startsWith("http")) {
             log("INTERNAL_API does not start with http, adding it now. May fail who knows. Update this", Level.SEVERE);
             INTERNAL_API = "http://" + INTERNAL_API;
         }
@@ -158,19 +160,20 @@ public class CraftBlockchainPlugin extends JavaPlugin {
 
         cmd.registerCommand("help", new WalletHelp());
         cmd.registerCommand(new String[] {"b", "bal", "balance"}, new WalletBalance());
-        cmd.registerCommand(new String[] {"set", "setwallet"}, new WalletSet());        
+        cmd.registerCommand(new String[] {"set", "setwallet"}, new WalletSet());
         cmd.registerCommand(new String[] {"faucet", "deposit"}, new WalletFaucet());
         cmd.registerCommand(new String[] {"pay", "send"}, new WalletSend());
         cmd.registerCommand(new String[] {"webapp"}, new WalletWebapp());
+        cmd.registerCommand(new String[] {"ibc-transfer"}, new IBCTransfer());
 
         // debug commands
         cmd.registerCommand(new String[] {"faketx"}, new WalletGenerateFakeTx());
         cmd.registerCommand(new String[] {"genfaketxstest"}, new WalletMultipleTxTesting());
-        
+
         cmd.registerCommand(new String[] {"fakesign"}, new WalletFakeSign());
         cmd.registerCommand(new String[] {"allpending", "allkeys"}, new WalletOutputPendingTxs());
         cmd.registerCommand(new String[] {"mypending", "pending", "mykeys", "keys"}, new WalletMyPendingTxs());
-        cmd.registerCommand(new String[] {"clearpending", "clear"}, new WalletClearPending());        
+        cmd.registerCommand(new String[] {"clearpending", "clear"}, new WalletClearPending());
 
         // arg[0] commands which will tab complete
         cmd.addTabComplete(new String[] {"balance","setwallet","send","pending","webapp"});
@@ -189,29 +192,29 @@ public class CraftBlockchainPlugin extends JavaPlugin {
         escrowCMD.addTabComplete(new String[] {"balance","deposit","redeem","pay"});
 
 
-        getServer().getPluginManager().registerEvents(new JoinLeave(), this);  
+        getServer().getPluginManager().registerEvents(new JoinLeave(), this);
         getServer().getPluginManager().registerEvents(new SignedTxCheckListener(), this);
         getServer().getPluginManager().registerEvents(new ExpiredTransactionListener(), this);
 
 
         // We dont want to crash main server thread. Running sync crashes main server thread
-        keyListener = new RedisKeyListener(); 
-        jedisPubSubClient = redisDB.getRedisConnection();  
+        keyListener = new RedisKeyListener();
+        jedisPubSubClient = redisDB.getRedisConnection();
         redisPubSubTask = Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
             @Override
-            public void run() {      
-                CraftBlockchainPlugin.log("Starting Redis PubSub Client");                          
+            public void run() {
+                CraftBlockchainPlugin.log("Starting Redis PubSub Client");
                 // Webapp sends this request after the Tx has been signed
-                // jedisPubSubClient.psubscribe(keyListener, "__key*__:signed_*"); 
+                // jedisPubSubClient.psubscribe(keyListener, "__key*__:signed_*");
                 // jedisPubSubClient.psubscribe(keyListener, "__keyevent@*__:expire*"); // gets expired keys from redis (after Tx is removed), so we can remove from pending
 
                 jedisPubSubClient.psubscribe(keyListener, "*");  // testing, but this works for now until I add a better regex pattern.
                 // for now manual expires don't work, we just only show some patterns
             }
         });
-        
+
         // set players wallets back to memory from database
-        Bukkit.getOnlinePlayers().forEach(player -> WalletManager.getInstance().cacheWalletOnJoin(player.getUniqueId()));        
+        Bukkit.getOnlinePlayers().forEach(player -> WalletManager.getInstance().cacheWalletOnJoin(player.getUniqueId()));
     }
 
     @Override
@@ -219,15 +222,15 @@ public class CraftBlockchainPlugin extends JavaPlugin {
         // TODO: some reason, this still crashes main server thread sometimes locally
         keyListener.unsubscribe();
         redisPubSubTask.cancel();
-        
+
         // TODO This breaks getting resources from the redis pool on reload
         // Bukkit.getScheduler().cancelTasks(this);
 
         PendingTransactions.clearUncompletedTransactionsFromRedis();
         redisDB.closePool();
-        mongoDB.disconnect(); 
-        // jedisPubSubClient.close();          
-        
+        mongoDB.disconnect();
+        // jedisPubSubClient.close();
+
         Bukkit.getScheduler().cancelTasks(this);
     }
 
@@ -260,7 +263,7 @@ public class CraftBlockchainPlugin extends JavaPlugin {
         return IntegrationAPI.getInstance();
     }
 
-    public String getSecret() {        
+    public String getSecret() {
         return getConfig().getString("DAO_ESCROW_ENDPOINT_SECRET"); // random string of secret characters for rest api
     }
 
@@ -269,18 +272,18 @@ public class CraftBlockchainPlugin extends JavaPlugin {
         return getConfig().getString("API_ENDPOINT");
     }
 
-    public String getWalletPrefix() {        
-        return WALLET_PREFIX; 
-    }    
-    public int getWalletLength() {    
+    public String getWalletPrefix() {
+        return WALLET_PREFIX;
+    }
+    public int getWalletLength() {
         return 39 + getWalletPrefix().length();
     }
 
-    public String getTokenDenom() {        
-        return TOKEN_DENOM; 
+    public String getTokenDenom() {
+        return TOKEN_DENOM;
     }
-    public String getTokenDenomName() {        
-        return TOKEN_DENOM_NAME; 
+    public String getTokenDenomName() {
+        return TOKEN_DENOM_NAME;
     }
 
     public String getWebappLink() {
@@ -290,7 +293,7 @@ public class CraftBlockchainPlugin extends JavaPlugin {
     public Double getTaxRate() {
         return TAX_RATE;
     }
-    
+
     public String getServerDaoTaxWallet() { // used for SERVER payments -> the DAO (taxes)
         return DAO_SERVER_WALLET;
     }
@@ -301,6 +304,10 @@ public class CraftBlockchainPlugin extends JavaPlugin {
 
     public String getApiMakePaymentEndpoint() {
         return API_MAKE_PAYMENT_ENDPOINT;
+    }
+
+    public String getApiIBCTransferItem() {
+        return API_IBC_TRANSFER_ITEM;
     }
 
     public static void log(String msg, Level level) {
@@ -314,6 +321,6 @@ public class CraftBlockchainPlugin extends JavaPlugin {
         }
     }
     public static void log(String msg) {
-        log(msg, Level.INFO);    
+        log(msg, Level.INFO);
     }
 }

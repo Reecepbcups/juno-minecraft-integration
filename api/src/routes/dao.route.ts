@@ -9,6 +9,7 @@ router.get('/escrow_account_info', daoControler.getServerEscrowWallet)
 
 // addBundlePayment, submitBundlePayment
 router.post('/make_payment', daoControler.appendBundlePayment)
+router.post('/ibc_transfer', daoControler.ibcTransfer)
 router.post('/sign_bundle', daoControler.broadcastBundledPayment)
 router.get('/pending_payments', daoControler.getPendingPayments)
 

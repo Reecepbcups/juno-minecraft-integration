@@ -1,0 +1,1 @@
+d6e489114015558de85dc8e2d25290a44b482767461f8fc886baebf694af3f93  minecraft_contract.wasm

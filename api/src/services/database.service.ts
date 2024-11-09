@@ -2,14 +2,14 @@ import * as mongo from 'mongodb';
 import * as redis from 'redis';
 
 // List of loaded mongo collections
-export const collections: { 
+export const collections: {
     statistics?: mongo.Collection;
     accounts?: mongo.Collection;
     connections?: mongo.Collection;
-    reProperties?: mongo.Collection; 
+    reProperties?: mongo.Collection;
     reCities?: mongo.Collection;
-    reBuildings?: mongo.Collection; 
-    webappSyncCodes?: mongo.Collection; 
+    reBuildings?: mongo.Collection;
+    webappSyncCodes?: mongo.Collection;
     nfts?: mongo.Collection;
     escrow?: mongo.Collection; // balances
 } = {};
@@ -47,7 +47,7 @@ export const connectToMongo = async (connectionString, dbName) => {
 
 /**
  * Connect to Redis
- * 
+ *
  * @param connectionString Connection string
  */
 export const connectToRedis = async (connectionString) => {
@@ -55,8 +55,8 @@ export const connectToRedis = async (connectionString) => {
         url: connectionString
     });
 
-    redisClient.on('error', (err) => console.log('Redis Client Error', err));
-    redisClient.on('ready', () => console.log('Successfully connected to Redis Server'));
+    // redisClient.on('error', (err) => console.log('Redis Client Error', err));
+    // redisClient.on('ready', () => console.log('Successfully connected to Redis Server'));
 
     await redisClient.connect();
 

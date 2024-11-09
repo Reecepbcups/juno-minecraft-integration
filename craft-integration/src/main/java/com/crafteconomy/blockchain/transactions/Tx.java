@@ -21,13 +21,13 @@ import lombok.ToString;
 
 @Getter
 @Setter
-@ToString 
+@ToString
 public class Tx implements Serializable {
 
     private static IntegrationAPI api = IntegrationAPI.getInstance();
     private static WalletManager walletManager = WalletManager.getInstance();
-    
-    
+
+
     private UUID fromUUID;
     private UUID toUUID; // for BiConsumer only
 
@@ -46,15 +46,15 @@ public class Tx implements Serializable {
 
     // set a consumer to run after the timeout (redisMinuteTTL) is reached (useful for reverting a Tx which was not signed, like for trading)
     // It passes through the users to the consumers as it would normally (Consumer(getFromUUID()) & biConsumer(getFromUUID(), getToUUID()))
-    private Consumer<UUID> consumerOnExpire = null; 
+    private Consumer<UUID> consumerOnExpire = null;
     private BiConsumer<UUID, UUID> biConsumerOnExpire = null;
-    
+
     // since the chain works in ints/longs, we save the Tx data as the ucraft variant
     // there are helper functions to getCraftAmount() and setCraftAmount() which auto convert to this value
-    private long uCraftAmount = 0; 
+    private long uCraftAmount = 0;
 
     // used when submitting a tx. Done like a builder
-    // Tx tx = api.createServerTx(uuid, amount, "ESCROWING " + amount + "FOR " + uuid.toString(), depositEscrowLogic(uuid, amount));        
+    // Tx tx = api.createServerTx(uuid, amount, "ESCROWING " + amount + "FOR " + uuid.toString(), depositEscrowLogic(uuid, amount));
     // tx = tx.sendDescription().sendTxIDClickable().sendWebappLink();
     // tx.submit();
     private boolean includeTxClickable = false;
@@ -62,7 +62,7 @@ public class Tx implements Serializable {
     private boolean sendWebappLink = false;
 
     public Tx(UUID playerUUID, String TO_WALLET, float craftAmount, String description, Consumer<UUID> function){
-        this.setFromUUID(playerUUID);        
+        this.setFromUUID(playerUUID);
         this.setDescription(description);
         this.setToWallet(toWallet);
         this.setCraftAmount(craftAmount);
@@ -74,11 +74,11 @@ public class Tx implements Serializable {
     public Tx(UUID playerUUID, UUID recipientUUID, String TO_WALLET, int amount, String description, BiConsumer<UUID, UUID> biFunction){
         this(playerUUID, TO_WALLET, amount, description, null);
         this.setToUUID(recipientUUID);
-        this.setBiFunction(biFunction);        
+        this.setBiFunction(biFunction);
     }
 
-    public Tx() {    
-        this.TxID = UUID.randomUUID();    
+    public Tx() {
+        this.TxID = UUID.randomUUID();
     }
 
     public Tx setDescription(String description) {
@@ -106,8 +106,8 @@ public class Tx implements Serializable {
     }
 
     // IDEA:
-    // Could make transactions change the tax rate here when generating? 
-    // Then in BlockchainRequests.java just pass through the Tx, getTaxRate, if == 0, no tax 
+    // Could make transactions change the tax rate here when generating?
+    // Then in BlockchainRequests.java just pass through the Tx, getTaxRate, if == 0, no tax
 
     public void setCraftAmount(float amount) {
         this.uCraftAmount = (long)(amount*1_000_000);
@@ -121,19 +121,19 @@ public class Tx implements Serializable {
         this.uCraftAmount = ucraft_amount;
     }
 
-    public BigDecimal getCraftAmount() {        
+    public BigDecimal getCraftAmount() {
         return BigDecimal.valueOf((this.uCraftAmount / 1_000_000));
     }
 
     public void complete() {
         if(biFunction != null) {
             this.getBiFunction().accept(this.fromUUID, this.toUUID);
-            
+
         } else if(function != null) {
             this.getFunction().accept(this.fromUUID);
         }
     }
-    
+
     public Tx setTxType(TransactionType txType) {
         // sets the type of transaction for the webapp to better sort each ID.
         // (optional)
@@ -160,7 +160,7 @@ public class Tx implements Serializable {
     /**
      * Submit the transaction to redis for the webapp to sign & send link to sign it
      */
-    public ErrorTypes submit() {        
+    public ErrorTypes submit() {
         ErrorTypes returnType = api.submit(this);
         if(returnType == ErrorTypes.SUCCESS) {
             Player player = Bukkit.getPlayer(this.fromUUID);
@@ -170,21 +170,21 @@ public class Tx implements Serializable {
                 }
                 if(sendDescMessage) {
                     player.sendMessage(this.getDescription());
-                }    
+                }
                 if(sendWebappLink) {
                     api.sendWebappForSigning(player);
-                }                
-            }            
+                }
+            }
         }
         return returnType;
     }
 
     @Override
-    public boolean equals(Object o) {        
+    public boolean equals(Object o) {
         if(o instanceof Tx) {
             Tx tx = (Tx) o;
             return tx.getTxID().equals(this.getTxID());
-        }        
+        }
         return false;
     }
 }

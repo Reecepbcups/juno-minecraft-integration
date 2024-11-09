@@ -1,6 +1,6 @@
 // Express
 import { Request, Response } from 'express';
-import { getServersEscrowAccountInfo, addBundlePayment, signAndBroadcastBundlePayment, getBundledMessages } from '../services/dao.service';
+import { getServersEscrowAccountInfo, addBundlePayment, signAndBroadcastBundlePayment, getBundledMessages, performItemIBCTransfer } from '../services/dao.service';
 
 // deprecated for bundled payment
 // export const makePaymentToPlayer = async (req: Request, res: Response) => {
@@ -18,6 +18,15 @@ export const appendBundlePayment = async (req: Request, res: Response) => {
     console.log("addBundlePayment:", secret, wallet, ucraft_amount);
 
     const response = await addBundlePayment(secret, wallet, ucraft_amount);
+    if (response) return res.status(200).json(response);
+    else return res.status(404).json({ message: 'No Real Estate NFTs found for this wallet' });
+};
+
+export const ibcTransfer = async (req: Request, res: Response) => {
+    const {secret, wallet, item} = req.body;
+    console.log("ibcTransfer:", secret, wallet, item);
+
+    const response = await performItemIBCTransfer(secret, wallet, item);
     if (response) return res.status(200).json(response);
     else return res.status(404).json({ message: 'No Real Estate NFTs found for this wallet' });
 };
@@ -44,10 +53,11 @@ export const getServerEscrowWallet = async (req: Request, res: Response) => {
     else return res.status(404).json({ message: 'ERROR: No escrow account found in config...' });
 };
 
-export default {        
+export default {
     getServerEscrowWallet,
     // makePaymentToPlayer,
     appendBundlePayment,
+    ibcTransfer,
     broadcastBundledPayment,
     getPendingPayments,
 };

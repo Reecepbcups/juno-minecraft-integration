@@ -8,6 +8,8 @@ public enum TransactionType {
     LAND_CLAIM,
     REAL_ESTATE,
 
+    COSMWASM, // IBC Transfers
+
     ESCROW_DEPOSIT, // tax free transactions in BlockchainRequests.java
     ESCROW_WITHDRAW,
     LIQUIDITY_POOL, // swaps

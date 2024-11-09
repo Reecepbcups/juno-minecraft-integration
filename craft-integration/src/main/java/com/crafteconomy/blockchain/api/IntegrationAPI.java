@@ -28,13 +28,13 @@ public class IntegrationAPI {
     private CraftBlockchainPlugin blockchainPlugin;
 
     // singleton, sets wallet to the server wallet in config
-    private final String SERVER_WALLET, ESCROW_WALLET_REST_API; 
+    private final String SERVER_WALLET, ESCROW_WALLET_REST_API;
     private final String webappAddress;
     private final String SERVER_NAME;
     private final String TOKEN_DENOM_NAME;
     private final String TOKEN_DENOM;
 
-    private IntegrationAPI() {    
+    private IntegrationAPI() {
         blockchainPlugin = CraftBlockchainPlugin.getInstance();
 
         SERVER_WALLET = blockchainPlugin.getServerDaoTaxWallet(); // main wallet used for taxes -> the dow directly.
@@ -57,7 +57,7 @@ public class IntegrationAPI {
         if(TOKEN_DENOM_NAME == null) {
             throw new IllegalStateException("TOKEN_DENOM_NAME is not set in main file.");
         }
-        
+
         TOKEN_DENOM = blockchainPlugin.getTokenDenom();
         if(TOKEN_DENOM == null) {
             throw new IllegalStateException("TOKEN_DENOM is not set in main file.");
@@ -81,7 +81,7 @@ public class IntegrationAPI {
     public String getServerName() {
         return SERVER_NAME;
     }
-    
+
     public String getTokenName() {
         return TOKEN_DENOM_NAME;
     }
@@ -93,7 +93,7 @@ public class IntegrationAPI {
     /**
      * Gets the escrow wallet which holds & pays escrows (controlled by the DAO, but is not the DAO fund / multisig.)
      * http://api.crafteconomy.io/v1/dao/escrow_account_info
-     * 
+     *
      * @return String Wallet
      */
     public String getServerEscrowRestApiWallet() {
@@ -122,12 +122,12 @@ public class IntegrationAPI {
      * @param player_uuid
      * @return
      */
-    public boolean setWallet(UUID player_uuid, String craftWallet) {    
+    public boolean setWallet(UUID player_uuid, String craftWallet) {
         if(isValidWallet(craftWallet)) {
             walletManager.setAddress(player_uuid, craftWallet);
             return true;
         }
-        return false;        
+        return false;
     }
 
     /**
@@ -197,7 +197,7 @@ public class IntegrationAPI {
         return blockchainPlugin.getTaxRate();
     }
 
-    
+
     /**
      * Expires a transaction & runs that logic if the plugin wants to do this earlier than intended.
      * Ex: useful for minigames if the user does not sign before the game starts, expire the transaction
@@ -205,7 +205,7 @@ public class IntegrationAPI {
      * @return true if it was expired, false if the key was not found
      */
     public boolean expireTransaction(UUID transaction_uuid) {
-        // clear the key from the redis cache & 
+        // clear the key from the redis cache &
         Tx tx = PendingTransactions.getInstance().getTxFromID(transaction_uuid);
         if(tx == null) {
             CraftBlockchainPlugin.log("[API, expireTransaction] TxID " + transaction_uuid + " is not in pending transactions on this server. Cannot expire it.");
@@ -242,7 +242,7 @@ public class IntegrationAPI {
         tx.setDescription(description);
         tx.setFunction(callback);
         return tx;
-    } 
+    }
 
     /**
      * Allows for 2 players to be involved in a transaction, useful for trading between players
@@ -263,8 +263,8 @@ public class IntegrationAPI {
         tx.setDescription(description);
         tx.setBiFunction(biCallback);
         return tx;
-    } 
-    
+    }
+
     /**
      * Creates a transaction which pays tokens back to the servers main wallet
      * @param from_uuid     Who it is from
@@ -276,7 +276,7 @@ public class IntegrationAPI {
     public Tx createServerTx(UUID from_uuid, long amount, String description, Consumer<UUID> callback) {
         return createNewTx(from_uuid, SERVER_WALLET, amount, description, callback);
     }
-    
+
     /**
      * Submits a transaction message to the redis instance (To get signed from webapp)
      * @param tx    Transaction to submit
@@ -287,13 +287,13 @@ public class IntegrationAPI {
     }
 
     /**
-     * Gives a wallet some tokens (utoken) 
+     * Gives a wallet some tokens (utoken)
      * @param wallet_address
      * @param amount
      * @return  CompletableFuture<FaucetTypes>
      */
     public CompletableFuture<FaucetTypes> faucetUCraft(String wallet_address, String description, long utoken) {
-        return BlockchainRequest.depositUCraftToAddress(wallet_address, description, utoken);   
+        return BlockchainRequest.depositUCraftToAddress(wallet_address, description, utoken);
     }
 
     /**
@@ -304,47 +304,47 @@ public class IntegrationAPI {
      * @return CompletableFuture<FaucetTypes>
      */
     public CompletableFuture<FaucetTypes> faucetCraft(String wallet_address, String description, float craft_amount) {
-        return faucetUCraft(wallet_address, description, (long) (craft_amount*1_000_000));   
+        return faucetUCraft(wallet_address, description, (long) (craft_amount*1_000_000));
     }
 
     public CompletableFuture<FaucetTypes> faucetUCraft(UUID uuid, String description, long utoken) {
-        return BlockchainRequest.depositUCraftToAddress(walletManager.getAddress(uuid), description, utoken);   
+        return BlockchainRequest.depositUCraftToAddress(walletManager.getAddress(uuid), description, utoken);
     }
-    
+
     public CompletableFuture<FaucetTypes> faucetCraft(UUID uuid, String description, float craft_amount) {
-        return faucetUCraft(uuid, description, (long) (craft_amount*1_000_000));   
+        return faucetUCraft(uuid, description, (long) (craft_amount*1_000_000));
     }
 
     // --------------------------------------------------
     // clickable links / commands / TxId's to make user life better
     public void sendWebappForSigning(CommandSender sender, String message, String hoverMsg) {
-		Util.clickableWebsite(sender, 
+		Util.clickableWebsite(sender,
             getWebAppAddress(), // link which we have the webapp redirect to
             message,
             hoverMsg
         );
 	}
     public void sendWebappForSigning(CommandSender sender, String message) {
-        sendWebappForSigning(sender, 
-            message, 
+        sendWebappForSigning(sender,
+            message,
             "&7&oSign your transaction(s) with the KEPLR wallet"
         );
 	}
     public void sendWebappForSigning(CommandSender sender) {
-        sendWebappForSigning(sender, 
-            "&6&l[!] &e&nClick here to sign your transaction(s)", 
+        sendWebappForSigning(sender,
+            "&6&l[!] &e&nClick here to sign your transaction(s)",
             "&7&oSign your transaction(s) with the KEPLR wallet"
         );
 	}
     public void sendWebappForSigning(Player player) {
         sendWebappForSigning((CommandSender)player);
 	}
-    
+
 
 	public void sendClickableKeplrInstallDocs(CommandSender sender) {
-		Util.clickableWebsite(sender, "https://docs.crafteconomy.io/set-up/wallet", 
+		Util.clickableWebsite(sender, "https://docs.crafteconomy.io/set-up/wallet",
             "&2[!] &a&nClick here to learn how to set up your wallet.",
-            "&7&oSetup your CRAFT wallet with Keplr"    
+            "&7&oSetup your CRAFT wallet with Keplr"
         );
 	}
 
@@ -380,9 +380,9 @@ public class IntegrationAPI {
 
 
     // ESCROW ACCOUNTS
-    
+
     /**
-     * Deposits CRAFT into an in game account (Escrow). 
+     * Deposits CRAFT into an in game account (Escrow).
      * Each escrow is redeemable for 1x craft, its deposit rate
      */
     public EscrowErrors escrowUCraftDeposit(UUID playerUUID, long ucraft_amount) {

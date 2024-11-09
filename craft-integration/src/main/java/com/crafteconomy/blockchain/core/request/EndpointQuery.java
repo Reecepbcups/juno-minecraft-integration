@@ -24,46 +24,46 @@ public class EndpointQuery {
 
     private static JSONParser parser = new JSONParser();
     private static JSONObject json;
-    
+
     // Only run these from completeable futures async
     public static Object req(String URL, RequestTypes type, String body, String logMSG) {
-        Object value = 0L; 
-        
-        try {     
+        Object value = 0L;
+
+        try {
             CraftBlockchainPlugin.log(logMSG);
 
             Request request;
 
             if(body != null) {
-                request = Request.Post(URL);                
+                request = Request.Post(URL);
                 request.bodyString(body, ContentType.APPLICATION_JSON);
             } else {
                 request = Request.Get(URL);
             }
-            
+
             request.setHeader("Accept", "application/json");
             request.setHeader("Content-Type", "application/json");
 
             HttpResponse httpResponse = request.execute().returnResponse();
             if(httpResponse.getStatusLine().getStatusCode() != 200){
-                CraftBlockchainPlugin.log(httpResponse.getStatusLine().toString());   
+                CraftBlockchainPlugin.log(httpResponse.getStatusLine().toString());
             }
 
-            if (httpResponse.getEntity() != null) {                
-                String html = EntityUtils.toString(httpResponse.getEntity());            
+            if (httpResponse.getEntity() != null) {
+                String html = EntityUtils.toString(httpResponse.getEntity());
 
                 json = (JSONObject) parser.parse(html);
-                
+
                 if(type == RequestTypes.ACCOUNT) {
                     // http://65.108.125.182:1317/cosmos/auth/v1beta1/accounts/craft1s4yczg3zgr4qdxussx3wpgezangh2388xgkkz9
                     CraftBlockchainPlugin.log("JSON " + json);
-                    json = (JSONObject) json.get("account");                    
+                    json = (JSONObject) json.get("account");
                     return json.get("sequence").toString();
                 }
 
                 // add CRAFT_PRICE query here
 
-                // gets the key based on the type's name, 
+                // gets the key based on the type's name,
                 // so TotalSupply = amount. balance = balance
                 json = (JSONObject) json.get(type.json_key);
 
@@ -71,7 +71,7 @@ public class EndpointQuery {
                     value = json.get("amount").toString();
                 } else {
                     value = ErrorTypes.NO_TOKENS_FOR_WALLET.code;
-                }      
+                }
             }
 
         } catch (Exception e) {
@@ -80,22 +80,22 @@ public class EndpointQuery {
             if(e.getMessage().contains("Connection refused")) {
                 error_msg = "Error BlockchainAPI Connection refused, is the server running?";
                 value = ErrorTypes.NODE_DOWN.code;
-            } else {                
+            } else {
                 e.printStackTrace();
                 value = ErrorTypes.NETWORK_ERROR.code;
             }
 
             CraftBlockchainPlugin.log(error_msg);
-        } 
+        }
         return value;
-    }    
+    }
     public static Object req(String URL, RequestTypes type, String logMSG){
         return req(URL, type, null, logMSG);
     }
 
 
 
-    public static CompletableFuture<Float> queryCraftTokenPrice() {        
+    public static CompletableFuture<Float> queryCraftTokenPrice() {
         CompletableFuture<Float> future = new CompletableFuture<>();
 
         URL url = null;
@@ -134,8 +134,8 @@ public class EndpointQuery {
             future.complete(price);
         } catch (Exception e) {
             future.complete(-1.0f);
-        }    
-        return future;    
+        }
+        return future;
     }
 
 }
