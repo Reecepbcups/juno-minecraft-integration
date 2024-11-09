@@ -4,7 +4,7 @@
   <groupId>com.crafteconomy</groupId>
   <artifactId>craft-integration</artifactId>
   <name>craft-integration</name>
-  <version>4.4.8</version>
+  <version>4.5.0</version>
   <build>
     <resources>
       <resource>
@@ -18,7 +18,7 @@
         <version>2.3.1</version>
         <configuration>
           <finalName>craft-integration-${project.version}</finalName>
-          <outputDirectory>${basedir}/../output</outputDirectory>
+          <outputDirectory>${basedir}/outputs</outputDirectory>
         </configuration>
       </plugin>
       <plugin>
