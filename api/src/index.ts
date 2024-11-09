@@ -39,9 +39,16 @@ if(DAO_EXP_MODULE_ONLY && DAO_EXP_MODULE_ONLY.toLowerCase().startsWith('t')) {
     console.log(`DAO_EXP_MODULE_ONLY is ${DAO_EXP_MODULE_ONLY}`);
     app.use('/v1/dao', daoRouter)
 } else {
+
+    // if DB_CONN_STRING is undefined or empty, return error
+    if (!DB_CONN_STRING || !DB_NAME) {
+        console.error('DB_CONN_STRING or DB_NAME is not defined');
+        process.exit(1);
+    }
+
     // we only need MOngoDB if we use all the routes, excluding DAO/EXP
     connectToMongo(DB_CONN_STRING, DB_NAME);
-    // Setup all routers (including the DAO)    
+    // Setup all routers (including the DAO)
     app.use('/v1/connections', connectionsRouter);
     app.use('/v1/tx', transactionsRouter);
     app.use('/v1/dao', daoRouter)
@@ -59,14 +66,14 @@ app.get('/', (req, res) => {
             const daoRoutes = daoRouter.stack.map(({ route }) => `${urlStart}/v1/dao` + route.path)
             ROUTER_CACHE = { dao: daoRoutes }
         } else {
-            // Setup all endpoints, including the DAO endpoint            
+            // Setup all endpoints, including the DAO endpoint
             const connectionsRoutes = connectionsRouter.stack.map(({ route }) => `${urlStart}/v1/connections` + route.path)
-            const transactionsRoutes = transactionsRouter.stack.map(({ route }) => `${urlStart}/v1/tx` + route.path)                        
-            const daoRoutes = daoRouter.stack.map(({ route }) => `${urlStart}/v1/dao` + route.path)                        
+            const transactionsRoutes = transactionsRouter.stack.map(({ route }) => `${urlStart}/v1/tx` + route.path)
+            const daoRoutes = daoRouter.stack.map(({ route }) => `${urlStart}/v1/dao` + route.path)
 
-            ROUTER_CACHE = {                
+            ROUTER_CACHE = {
                 connections: connectionsRoutes,
-                transactions: transactionsRoutes,                            
+                transactions: transactionsRoutes,
                 dao: daoRoutes,
             }
         }
@@ -80,7 +87,7 @@ app.get('/', (req, res) => {
 app.listen(API_PORT, async () => {
     console.log(`Started Integration REST API on port ${API_PORT}`);
 
-    let intervalSeconds = 1000 * 20;    
+    let intervalSeconds = 1000 * 20;
 
     // starting auto signing API process
     setInterval(async () => {
@@ -101,7 +108,7 @@ app.listen(API_PORT, async () => {
     if(client) {
         console.log(`Connected to Craftd node: ${process.env.CRAFTD_NODE}`);
     } else {
-        console.log(`Error connecting to Craftd node: ${process.env.CRAFTD_NODE}/`);
+        console.log(`Error connecting to Craftd node: ${process.env.CRAFTD_NODE}`);
         process.exit(1);
     }
 });
