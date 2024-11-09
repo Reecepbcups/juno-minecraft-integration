@@ -75,6 +75,8 @@ public class BlockchainRequest {
 
                 String req_url = BALANCES_ENDPOINT.replace("%address%", craft_address).replace("%denomination%", denomination);
 
+                System.out.println("bal req_url " +  req_url);
+
                 long amount = Long.parseLong(EndpointQuery.req(req_url, RequestTypes.BALANCE, "Balance Request").toString());
 
                 Caches.put(RequestTypes.BALANCE, craft_address, amount);
