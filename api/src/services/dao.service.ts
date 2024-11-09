@@ -41,7 +41,7 @@ const allowCache = false;
 
 
 export const getEscrowBalances = async () => {
-    const REDIS_KEY = `cache:escrow_balances`;    
+    const REDIS_KEY = `cache:escrow_balances`;
     if(allowCache) {
         let escrow_balances = await redisClient?.get(REDIS_KEY);
         if (escrow_balances) {
@@ -61,7 +61,7 @@ export const getEscrowBalances = async () => {
                 _id: null,
                 total: { $sum: "$ucraft_amount" },
                 unique_records: { $sum: 1 },
-            },            
+            },
         },
     ]).toArray();
 
@@ -79,7 +79,7 @@ export const getEscrowBalances = async () => {
             balances: total,
             denom: DENOM,
             unique_accounts: unique_records,
-        };        
+        };
     }
 
     // save total_escrow_balances to redis
@@ -109,7 +109,7 @@ export const getServersEscrowAccountInfo = async () => {
 
     data_format.address = account.address;
     data_format.denom = balance.denom;
-    data_format.balance = Number(balance.amount);    
+    data_format.balance = Number(balance.amount);
     // return {
     //     address: `${account.address}`,
     //     denom: balance.denom,
@@ -126,7 +126,7 @@ export const getCraftBalance = async (wallet_addr) => {
     try {
         const client = await SigningStargateClient.connectWithSigner(`${process.env.CRAFTD_NODE}`, wallet_addr);
         // const balance = await client.getAllBalances(account.address)
-        balance = await client.getBalance(wallet_addr, DENOM)        
+        balance = await client.getBalance(wallet_addr, DENOM)
     } catch (error) {
         console.log("getCraftBalance", error);
     }
@@ -163,12 +163,12 @@ const assetProperSecret = (secret: string): boolean => {
     return true
 }
 
-export const addBundlePayment = async (secret: string, recipient_wallet: string, utoken_amount: string) => {    
+export const addBundlePayment = async (secret: string, recipient_wallet: string, utoken_amount: string) => {
     if(assetProperSecret(secret) === false) {
         return {"error": "secret is incorrect"};
     }
-    
-    const fromAcc = await getServersEscrowAccountInfo();    
+
+    const fromAcc = await getServersEscrowAccountInfo();
 
     const msg: EncodeObject = {
         typeUrl: "/cosmos.bank.v1beta1.MsgSend",
@@ -188,6 +188,35 @@ export const addBundlePayment = async (secret: string, recipient_wallet: string,
     return { "success": { "wallet": recipient_wallet, "utoken_amount": utoken_amount } };
 }
 
+export const performItemIBCTransfer = async (secret: string, recipient_wallet: string, item: string) => {
+    if(assetProperSecret(secret) === false) {
+        return {"error": "secret is incorrect"};
+    }
+
+    const fromAcc = await getServersEscrowAccountInfo();
+
+    // https://github.com/cosmos/cosmjs/blob/e819a1fc0e99a3e5320d8d6667a08d3b92e5e836/packages/cosmwasm-stargate/src/modules/wasm/aminomessages.ts#L87
+    const msg: EncodeObject = {
+        typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
+        value: {
+            sender: fromAcc.address,
+            contract: "cosmos14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s4hmalr",
+            msg: {
+                transfer: {
+                    channel: "wasm.cosmos14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s4hmalr",
+                    wallet: recipient_wallet,
+                    item: item,
+                }
+            },
+            funds: [],
+        },
+    }
+    // TODO: may just have to run it here vs the bundler
+    messages.push(msg);
+
+    return { "success": { "wallet": recipient_wallet, "item": item } };
+}
+
 export const getBundledMessages = () => {
     return messages;
 }
@@ -202,7 +231,7 @@ export const signAndBroadcastBundlePayment = async (secret: string) => {
     let client: SigningStargateClient;
     let account;
     try {
-        // TODO: pre generate these so we can just grab the client & sign? 
+        // TODO: pre generate these so we can just grab the client & sign?
         const server_wallet = await DirectSecp256k1HdWallet.fromMnemonic(`${process.env.CRAFT_DAO_ESCROW_WALLET_MNUMONIC}`, { prefix: WALLET_PREFIX });
         client = await SigningStargateClient.connectWithSigner(`${process.env.CRAFTD_NODE}`, server_wallet);
         account = await server_wallet.getAccounts();
@@ -215,21 +244,21 @@ export const signAndBroadcastBundlePayment = async (secret: string) => {
     console.log(account[0].address);
 
     let result: DeliverTxResponse;
-    
+
     // const coins_amt = coins(ucraft_amount, DENOM);
     const gasPrice = GasPrice.fromString(GAS_PRICES.toString() + DENOM);
 
     const gasCost = BASE_GAS + (messages.length * PER_MSG_GAS)
     const fee = calculateFee(gasCost, gasPrice);
-   
+
     const memo = "(https://craft-app.reece.sh) Payment from MINECRAFT SERVER @ " + new Date().toISOString() + " with payments: " + messages.length;
     console.log(memo)
 
     let allAccounts: string[] = [];
     try {
-        console.log("DEBUG: " + account[0].address + " sending " + messages + " fee: " + fee);        
+        console.log("DEBUG: " + account[0].address + " sending " + messages + " fee: " + fee);
         result = await client.signAndBroadcast(account[0].address, messages, fee, memo);
-        
+
         // assertIsDeliverTxSuccess(result);
         for (const msg of messages) {
             allAccounts.push(msg.value.to_address);
@@ -237,9 +266,9 @@ export const signAndBroadcastBundlePayment = async (secret: string) => {
 
         // clear messages
         messages = [];
-        
-        console.log("Successfully broadcasted bulk Txs:", result.code, result.height, result.transactionHash);        
-    } catch (err) {        
+
+        console.log("Successfully broadcasted bulk Txs:", result.code, result.height, result.transactionHash);
+    } catch (err) {
         // {"error":"{\"code\":-32603,\"message\":\"Internal error\",\"data\":\"tx already exists in cache\"}"}
         // TODO: save to DB to retry later
 
@@ -265,13 +294,13 @@ export const signAndBroadcastBundlePayment = async (secret: string) => {
     // return an array here of all sends / interacts that are NOT smart contracts?
     return res;
 }
-    
+
 
 /**
  * https://github.com/cosmos/cosmjs/blob/main/packages/cli/examples/local_faucet.ts
- * 
+ *
  * This function will pay a player's account from their esgrow wallet in game.
- * 
+ *
  * curl --data '{"secret": "7821719493", "description": "test description", "wallet": "craft10r39fueph9fq7a6lgswu4zdsg8t3gxlqd6lnf0", "ucraft_amount": 500}' -X POST -H "Content-Type: application/json"  http://localhost:4000/v1/dao/make_payment
 */
 // deprecated in favor of bulk updates
@@ -287,20 +316,20 @@ export const makePayment = async (secret: string, recipient_wallet: string, ucra
     let client: SigningStargateClient;
     let account;
     try {
-        // TODO: pre generate these so we can just grab the client & sign? 
+        // TODO: pre generate these so we can just grab the client & sign?
         const server_wallet = await DirectSecp256k1HdWallet.fromMnemonic(`${process.env.CRAFT_DAO_ESCROW_WALLET_MNUMONIC}`, { prefix: WALLET_PREFIX });
         client = await SigningStargateClient.connectWithSigner(`${process.env.CRAFTD_NODE}`, server_wallet);
         account = await server_wallet.getAccounts();
     } catch (error) {
         console.log(error);
         return;
-    }    
+    }
 
     const time = new Date().toISOString();
     const coins_amt = coins(ucraft_amount, DENOM);
     const gasPrice = GasPrice.fromString(GAS_PRICES.toString() + DENOM);
     const fee = calculateFee(BASE_GAS+PER_MSG_GAS, gasPrice);
-    let result;    
+    let result;
 
     try {
         console.log("DEBUG: " + account[0].address + " sending " + coins_amt + " to " + recipient_wallet + " with description " + description + " fee: " + fee);
@@ -311,13 +340,13 @@ export const makePayment = async (secret: string, recipient_wallet: string, ucra
             fee,
             "Payment from SERVER @ " + time + " " + description
         );
-        
-        assertIsDeliverTxSuccess(result);        
+
+        assertIsDeliverTxSuccess(result);
 
         // console.log("Successfully broadcasted:", result.code, result.height, result.transactionHash, (result.rawLog).toString());
         console.log("Successfully broadcasted:", result.code, result.height, result.transactionHash);
         // return { "success": { "wallet": recipient_wallet, "ucraft_amount": ucraft_amount, "craft_amount": "999", "serverCraftBalLeft": "999", "transactionHash": result.transactionHash, "height": result.height } };
-    } catch (err) {        
+    } catch (err) {
         // {"error":"{\"code\":-32603,\"message\":\"Internal error\",\"data\":\"tx already exists in cache\"}"}
         // TODO: save to DB to retry later
 
@@ -357,7 +386,7 @@ export const makePayment = async (secret: string, recipient_wallet: string, ucra
             "Server bal Left: ": balanceLeftString
         },
         '#0099ff'
-    );    
+    );
 
     return { "success": { "wallet": recipient_wallet, "ucraft_amount": ucraft_amount, "craft_amount": asCraft.toString(), "serverCraftBalLeft": balanceLeftString, "transactionHash": result.transactionHash, "height": result.height } };
 };
