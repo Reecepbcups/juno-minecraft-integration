@@ -18,6 +18,7 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 
 import com.crafteconomy.blockchain.CraftBlockchainPlugin;
+import com.crafteconomy.blockchain.core.types.CosmWasmTypes;
 import com.crafteconomy.blockchain.core.types.ErrorTypes;
 import com.crafteconomy.blockchain.core.types.FaucetTypes;
 import com.crafteconomy.blockchain.core.types.RequestTypes;
@@ -290,6 +291,76 @@ public class BlockchainRequest {
     }
 
 
+    public static CompletableFuture<CosmWasmTypes> ibcTransferItemWithCosmWasm(String craft_address, String itemBase64) {
+        return CompletableFuture.supplyAsync(() -> makeCosmWasmRequest(craft_address, itemBase64)).completeOnTimeout(CosmWasmTypes.ENDPOINT_TIMEOUT, 45, TimeUnit.SECONDS);
+    }
+    private static CosmWasmTypes makeCosmWasmRequest(String craft_address, String itemBase64) {
+        // if(craft_address == null) { return CosmWasmTypes.NO_WALLET; }
+
+        URL url = null;
+        HttpURLConnection http = null;
+        OutputStream stream = null;
+        String endpoint = CraftBlockchainPlugin.getInstance().getApiIBCTransferItem();
+        String data = "{\"secret\": \""+ENDPOINT_SECRET+"\", \"item\": \""+itemBase64+"\", \"wallet\": \""+craft_address+"\"}";
+        CraftBlockchainPlugin.log("url: "+endpoint+", makeCosmWasmRequest data " + data);
+
+        try {
+            url = new URL(endpoint);
+            http = (HttpURLConnection)url.openConnection();
+            http.setRequestMethod("POST");
+            http.setDoOutput(true);
+            http.setRequestProperty("Content-Type", "application/json");
+
+            byte[] out = data.getBytes(StandardCharsets.UTF_8);
+            stream = http.getOutputStream();
+            stream.write(out);
+
+            // get the return value of the POST request
+            // {"success":{"craft_amount":"1","wallet":"craft10r39fueph9fq7a6lgswu4zdsg8t3gxlqd6lnf0","ucraft_amount":"1000000","serverCraftBalLeft":"999999910.196505craft",
+            //      "transactionHash":"EFF47C0977F82CC6533B6CFDDF7E5D93A45D7F955210B457B3CD8DE6E33EA289","height":40486}}
+            String response = JavaUtils.streamToString(http.getInputStream());
+            if(response.length() == 0) {
+                System.err.println("No response from server API (length 0 string)");
+                return CosmWasmTypes.FAILURE;
+            }
+
+            JSONObject json = new JSONObject();
+            json = (JSONObject) org.json.simple.JSONValue.parse(response);
+
+
+            CraftBlockchainPlugin.log("API Response: " + http.getResponseCode() + " | response: " + json);
+            http.disconnect();
+
+            if(http.getResponseCode() != 200) {
+                CraftBlockchainPlugin.log("Failed payment!");
+                return CosmWasmTypes.FAILURE;
+            }
+
+            if(json.keySet().contains("success")) {
+                CraftBlockchainPlugin.log("Successful payment!");
+                return CosmWasmTypes.SUCCESS;
+
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            // saveFailedTransaction(craft_address, description, ucraft_amount, e.getMessage());
+            if(e.getMessage().startsWith("Server returned HTTP response code: 502 for URL:")) {
+                CraftBlockchainPlugin.log("makePayment API is down!", Level.SEVERE);
+                return CosmWasmTypes.FAILURE;
+            } else {
+                CraftBlockchainPlugin.log("makePayment API is down!", Level.SEVERE);
+                return CosmWasmTypes.FAILURE;
+            }
+        }
+
+        return CosmWasmTypes.FAILURE;
+    }
+
+
+
+
     private static PendingTransactions pTxs = PendingTransactions.getInstance();
 
     public static ErrorTypes transaction(Tx transaction) {
@@ -361,6 +432,7 @@ public class BlockchainRequest {
 
         // Escrow, Authentication types = No tax.
         switch (txType) {
+            // case COSMWASM: // TODO:
             case AUTHENTICATION:
             case ESCROW_DEPOSIT:
             case ESCROW_WITHDRAW:
